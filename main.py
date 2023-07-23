@@ -4,6 +4,7 @@ import time
 import glob
 import os, shutil
 from emailing import send_email
+from threading import Thread
 
 video = cv.VideoCapture(0)
 time.sleep(1)
@@ -54,9 +55,12 @@ while True:
     if status_list[0]==1 and status_list[1]==0:
         all_images = glob.glob("images/*.png")
         index = prev_object_count+int((len(all_images)-prev_object_count)/3)
-        # print(index)
         image_path = f"images/{index}.png"
-        send_email(image_path)
+        
+        email_thread = Thread(target=send_email, args=(image_path,))
+        email_thread.daemon = True
+        email_thread.start()
+        # send_email(image_path)
         prev_object_count = count
 
     cv.imshow("My Video", frame)
