@@ -1,6 +1,8 @@
 import cv2 as cv
 from datetime import datetime
 import time
+import glob
+import os, shutil
 from emailing import send_email
 
 video = cv.VideoCapture(0)
@@ -8,8 +10,19 @@ time.sleep(1)
 
 first_frame = None
 status_list = []
+count = 1
+prev_object_count = 1
+
+directory = "images"
+parent_dir = os.getcwd()
+images_path = os.path.join(parent_dir, directory)
+if os.path.exists(images_path):
+    shutil.rmtree(images_path)
+os.makedirs(images_path, exist_ok=True)
+
 while True:
     check, frame = video.read()
+
     now = datetime.now()
     cv.putText(img=frame, text=now.strftime("%A"), org=(30, 50), \
                fontFace=cv.FONT_HERSHEY_PLAIN ,fontScale=2,  color=(255, 255, 255), thickness=2)
@@ -32,11 +45,19 @@ while True:
         rectangle = cv.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 3)
         if rectangle.any():
             status = 1
+            cv.imwrite(f"images/{count}.png", frame)
+            count += 1
+            
 
     status_list.append(status)
     status_list = status_list[-2:]
     if status_list[0]==1 and status_list[1]==0:
-        send_email()
+        all_images = glob.glob("images/*.png")
+        index = prev_object_count+int((len(all_images)-prev_object_count)/3)
+        # print(index)
+        image_path = f"images/{index}.png"
+        send_email(image_path)
+        prev_object_count = count
 
     cv.imshow("My Video", frame)
     key = cv.waitKey(1)
